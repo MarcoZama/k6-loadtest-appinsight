@@ -63,7 +63,7 @@ Function Post-ApplicationInsightData($body, $logType) {
     #   "x-ms-date"            = $rfc1123date;
     #   "time-generated-field" = "";
     }
-    $request
+    
     $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $headers -Body $body -UseBasicParsing
     return $response.StatusCode
 }
