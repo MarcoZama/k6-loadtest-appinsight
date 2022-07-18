@@ -20,7 +20,7 @@ param (
     [Parameter(Mandatory = $false)][int]$K6AgentCPU = 4, #Il numero di core CPU per ogni Container
     [Parameter(Mandatory = $false)][int]$K6AgentMemory = 4, #La quantità di RAM in Gb per ogni Container
 
-    [Parameter(Mandatory = $true)][string]$appInsightApiKey = "Lav4hb3v8psjcllogcgofq8qwedyschmuvj1fagn" 
+    [Parameter(Mandatory = $false)][string]$appInsightApiKey = "Lav4hb3v8psjcllogcgofq8qwedyschmuvj1fagn" 
 
 
 )
