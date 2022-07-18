@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  app-name: "k6-loadtest-appinsight"
+  app-name: "loadtestapi"
   rg-name: "RG-LoadTestk6"
   slot-name: pr-${{ github.event.number }}
 
@@ -24,10 +24,10 @@ jobs:
         uses: azure/CLI@v1
         with:
           azcliversion: 2.30.0
-          inlineScript: az account set --subscription 956b7f52-f044-412c-a0ad-90e5aa93daf0
+          inlineScript: az account set --subscription 0684d3a9-f0d2-4443-90e9-734663273ce9
       
       - name: Delete PR Slot
         uses: azure/CLI@v1
         with:
           azcliversion: 2.30.0
-          inlineScript: az webapp deployment slot delete --name ${{ env.app-name }} --resource-group ${{ env.rg-name }} --slot ${{ env.slot-name }} --subscription 956b7f52-f044-412c-a0ad-90e5aa93daf0
+          inlineScript: az webapp deployment slot delete --name ${{ env.app-name }} --resource-group ${{ env.rg-name }} --slot ${{ env.slot-name }} --subscription 0684d3a9-f0d2-4443-90e9-734663273ce9

@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  app-name: "k6-loadtest-appinsight"
+  app-name: "loadtestapi"
   rg-name: "RG-LoadTestk6"
 
 jobs:
