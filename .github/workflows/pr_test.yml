@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  app-name: "devops-k6-loadtest"
-  rg-name: "rg-devops-k6-loadtest"
+  app-name: "k6-loadtest-appinsight"
+  rg-name: "RG-LoadTestk6"
   slot-name: pr-${{ github.event.number }}
 
 jobs:
@@ -24,13 +24,13 @@ jobs:
           include-prerelease: true
 
       - name: Restore dotnet packages
-        run: dotnet restore ./src/TestApi/TestApi.csproj
+        run: dotnet restore ./src/SampleMinimalAPI/SampleMinimalAPI.csproj
 
       - name: Build with dotnet
-        run: dotnet build ./src/TestApi/TestApi.csproj --configuration Release
+        run: dotnet build ./src/SampleMinimalAPI/SampleMinimalAPI.csproj --configuration Release
 
       - name: Publish with dotnet
-        run: dotnet publish ./src/TestApi/TestApi.csproj -c Release -o ${{env.DOTNET_ROOT}}/loadtestapi
+        run: dotnet publish ./src/SampleMinimalAPI/SampleMinimalAPI.csproj -c Release -o ${{env.DOTNET_ROOT}}/loadtestapi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v2
