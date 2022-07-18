@@ -5,13 +5,13 @@ param (
     [Parameter(Mandatory = $true)][string]$ClientId,
     [Parameter(Mandatory = $true)][string]$ClientSecret,
     ### Azure resources
-    [Parameter(Mandatory = $false)][string]$loadTestResourceGroup = "rg-devops-loadtest", #Il nome del resource group dove creare le risorse Azure 
+    [Parameter(Mandatory = $false)][string]$loadTestResourceGroup = "RG-LoadTestK6", #Il nome del resource group dove creare le risorse Azure 
     [Parameter(Mandatory = $false)][string]$loadTestLocation = "westeurope", #Location per le risorse Azure
     [Parameter(Mandatory = $true)][string]$storageAccountName, #Il nome dello storage account che conterrà i file delle esecuzioni dei test ed i risultati
-    [Parameter(Mandatory = $false)][string]$storageShareName = "loadtestrun", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
+    [Parameter(Mandatory = $false)][string]$storageShareName = "saloadtestk6", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
     ### Load test resources
     [Parameter(Mandatory = $false)][string]$loadTestIdentifier = $(Get-Date -format "yyyyMMddhhmmss"), #Identificativo univoco per ogni run, usato anche come nome di cartella all'interno della Share dello storage account
-    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTests\loadtest.js", #Il percorso file di test di carico in K6
+    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTestsK6\loadtest.js", #Il percorso file di test di carico in K6
     [Parameter(Mandatory = $false)][string]$loadTestVUS = 30, #Il numero di Virtual Users concorrenti per ogni container
     [Parameter(Mandatory = $false)][string]$loadTestDuration = "20s", #La durata del test in secondi
     ### Containers info
@@ -26,6 +26,8 @@ param (
     [Parameter(Mandatory = $false)][string]$logFullTableName = "loadtestresultfull", #Il nome della tabella di Custom Logs dove verranno portati i dati FULL per cui è stata fatta ingestion
     [Parameter(Mandatory = $false)][switch]$uploadFullLogs, #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
     [Parameter(Mandatory = $false)][int]$splitblock = 10000 #Il numero di righe da inviare se i full logs sono superiori a 30MB
+
+
 )
 
 ### FUNCTIONS
@@ -125,7 +127,7 @@ Write-Host "Creating agents container(s)"
     Write-Host "Creating K6 agent $_"
     az container create --resource-group $using:loadTestResourceGroup --name "$using:AciK6AgentNamePrefix-$_" --location $using:loadTestLocation `
         --image $using:K6AgentImage --restart-policy Never --cpu $using:K6AgentCPU --memory $using:K6AgentMemory `
-        --environment-variables AGENT_NUM=$_ LOAD_TEST_ID=$using:loadTestIdentifier TEST_VUS=$using:loadTestVUS TEST_DURATION=$using:loadTestDuration MY_HOSTNAME="https://devops-k6-loadtest.azurewebsites.net" `
+        --environment-variables AGENT_NUM=$_ LOAD_TEST_ID=$using:loadTestIdentifier TEST_VUS=$using:loadTestVUS TEST_DURATION=$using:loadTestDuration MY_HOSTNAME="https://k6-loadtest-appinsight.azurewebsites.net" `
         --azure-file-volume-account-name $using:storageAccountName --azure-file-volume-account-key $using:storageAccountKey --azure-file-volume-share-name $using:storageShareName --azure-file-volume-mount-path "/$using:AciK6AgentLoadTestHome/" `
         --command-line "k6 run /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/script.js --summary-export /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_${_}_summary.json --out json=/$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_$_.json" 
 } -ThrottleLimit 10
