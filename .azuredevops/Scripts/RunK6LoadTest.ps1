@@ -27,6 +27,8 @@ param (
     [Parameter(Mandatory = $false)][switch]$uploadFullLogs, #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
     [Parameter(Mandatory = $false)][int]$splitblock = 10000 #Il numero di righe da inviare se i full logs sono superiori a 30MB
 
+    [Parameter(Mandatory = $true)][string]$appInsightApiKey = "Lav4hb3v8psjcllogcgofq8qwedyschmuvj1fagn", 
+
 
 )
 
@@ -48,6 +50,31 @@ Function Build-Signature ($customerId, $sharedKey, $date, $contentLength, $metho
     $authorization = 'SharedKey {0}:{1}' -f $customerId, $encodedHash
     return $authorization
 }
+
+Function Post-ApplicationInsightData($body, $logType) {
+    $method = "POST"
+    $contentType = "application/json"
+    $rfc1123date = [DateTime]::UtcNow.ToString("r")
+    $contentLength = $body.Length
+    $signature = Build-Signature `
+        -date $rfc1123date `
+        -contentLength $contentLength `
+        -method $method `
+        -contentType $contentType `
+    $uri = "https://dc.services.visualstudio.com/v2/track"
+
+   
+    $headers = @{
+        "X-Api-Key"        = $appInsightApiKey;
+    #   "Log-Type"             = $logType;
+    #   "x-ms-date"            = $rfc1123date;
+    #   "time-generated-field" = "";
+    }
+    $request
+    $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $headers -Body $body -UseBasicParsing
+    return $response.StatusCode
+}
+
 
 # Create the function to create and post the request
 Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType) {
@@ -166,8 +193,9 @@ New-Item -ItemType "directory" -Path $tempDownloadDirectory
     $jsonSummary | Add-Member NoteProperty "containersTestEnd" $injectorsEnd
     $finalJson = ConvertTo-Json @($jsonSummary) -Depth 99 
 
-    Post-LogAnalyticsData -customerId $logWorkspaceID -sharedKey $logWorkspaceKey -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) -logType $logTableName 
-
+    #Post-LogAnalyticsData -customerId $logWorkspaceID -sharedKey $logWorkspaceKey -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) -logType $logTableName 
+    Post-ApplicationInsightData -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) 
+    
     if ($uploadFullLogs) {
         $jsonFull = Download-JSON-From-StorageAccount -loadTestIdentifier $loadTestIdentifier -fileName "${loadTestIdentifier}_${_}.json" -tempDownloadDirectory $tempDownloadDirectory -storageAccountName $storageAccountName -storageAccountKey $storageAccountKey -storageShareName $storageShareName    
         $fileSizeMB = (Get-Item "$tempDownloadDirectory/${loadTestIdentifier}_${_}.json").length / 1MB
