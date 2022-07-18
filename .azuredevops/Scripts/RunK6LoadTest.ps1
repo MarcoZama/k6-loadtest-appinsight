@@ -19,13 +19,6 @@ param (
     [Parameter(Mandatory = $false)][int]$K6AgentInstances = 1, #Il numero di container da avviare
     [Parameter(Mandatory = $false)][int]$K6AgentCPU = 4, #Il numero di core CPU per ogni Container
     [Parameter(Mandatory = $false)][int]$K6AgentMemory = 4, #La quantità di RAM in Gb per ogni Container
-    ### Log Analytics Workspace Ingestion
-    [Parameter(Mandatory = $true)][string]$logWorkspaceID, #La Workspace ID della Log Analytics Workspace da utilizzare per l'ingestion dei risultati
-    [Parameter(Mandatory = $true)][string]$logWorkspaceKey, #La Primary Key della Log Analytics Workspace 
-    [Parameter(Mandatory = $false)][string]$logTableName = "loadtestresult", #Il nome della tabella di Custom Logs dove verranno portati i dati per cui è stata fatta ingestion
-    [Parameter(Mandatory = $false)][string]$logFullTableName = "loadtestresultfull", #Il nome della tabella di Custom Logs dove verranno portati i dati FULL per cui è stata fatta ingestion
-    [Parameter(Mandatory = $false)][switch]$uploadFullLogs, #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
-    [Parameter(Mandatory = $false)][int]$splitblock = 10000 #Il numero di righe da inviare se i full logs sono superiori a 30MB
 
     [Parameter(Mandatory = $true)][string]$appInsightApiKey = "Lav4hb3v8psjcllogcgofq8qwedyschmuvj1fagn", 
 
