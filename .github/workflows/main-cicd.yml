@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  app-name: "loadtestapi"
+  app-name: "k6-loadtest-appinsight"
   rg-name: "RG-LoadTestk6"
 
 jobs:
@@ -33,13 +33,13 @@ jobs:
         run: dotnet build ./src/SampleMinimalAPI/SampleMinimalAPI.csproj --configuration Release
 
       - name: Publish with dotnet
-        run: dotnet publish ./src/SampleMinimalAPI/SampleMinimalAPI.csproj -c Release -o ${{env.DOTNET_ROOT}}/loadtestapi
+        run: dotnet publish ./src/SampleMinimalAPI/SampleMinimalAPI.csproj -c Release -o ${{env.DOTNET_ROOT}}/k6-loadtest-appinsight
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v2
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/loadtestapi
+          path: ${{env.DOTNET_ROOT}}/k6-loadtest-appinsight
 
   deploy:
     runs-on: ubuntu-latest
