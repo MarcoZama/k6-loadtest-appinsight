@@ -8,7 +8,7 @@ param (
     [Parameter(Mandatory = $false)][string]$loadTestResourceGroup = "RG-LoadTestK6", #Il nome del resource group dove creare le risorse Azure 
     [Parameter(Mandatory = $false)][string]$loadTestLocation = "westeurope", #Location per le risorse Azure
     [Parameter(Mandatory = $true)][string]$storageAccountName, #Il nome dello storage account che conterrà i file delle esecuzioni dei test ed i risultati
-    [Parameter(Mandatory = $false)][string]$storageShareName = "saloadtestk6", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
+    [Parameter(Mandatory = $false)][string]$storageShareName = "saloadtestk6share", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
     ### Load test resources
     [Parameter(Mandatory = $false)][string]$loadTestIdentifier = $(Get-Date -format "yyyyMMddhhmmss"), #Identificativo univoco per ogni run, usato anche come nome di cartella all'interno della Share dello storage account
     [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTestsK6\loadtest.js", #Il percorso file di test di carico in K6
@@ -44,29 +44,7 @@ Function Build-Signature ($customerId, $sharedKey, $date, $contentLength, $metho
     return $authorization
 }
 
-Function Post-ApplicationInsightData($body, $logType) {
-    $method = "POST"
-    $contentType = "application/json"
-    $rfc1123date = [DateTime]::UtcNow.ToString("r")
-    $contentLength = $body.Length
-    $signature = Build-Signature `
-        -date $rfc1123date `
-        -contentLength $contentLength `
-        -method $method `
-        -contentType $contentType `
-    $uri = "https://dc.services.visualstudio.com/v2/track"
 
-   
-    $headers = @{
-        "X-Api-Key"        = $appInsightApiKey;
-    #   "Log-Type"             = $logType;
-    #   "x-ms-date"            = $rfc1123date;
-    #   "time-generated-field" = "";
-    }
-    
-    $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $headers -Body $body -UseBasicParsing
-    return $response.StatusCode
-}
 
 
 # Create the function to create and post the request
@@ -186,8 +164,8 @@ New-Item -ItemType "directory" -Path $tempDownloadDirectory
     $jsonSummary | Add-Member NoteProperty "containersTestEnd" $injectorsEnd
     $finalJson = ConvertTo-Json @($jsonSummary) -Depth 99 
 
-    #Post-LogAnalyticsData -customerId $logWorkspaceID -sharedKey $logWorkspaceKey -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) -logType $logTableName 
-    Post-ApplicationInsightData -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) 
+    Post-LogAnalyticsData -customerId $logWorkspaceID -sharedKey $logWorkspaceKey -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) -logType $logTableName 
+    
     
     if ($uploadFullLogs) {
         $jsonFull = Download-JSON-From-StorageAccount -loadTestIdentifier $loadTestIdentifier -fileName "${loadTestIdentifier}_${_}.json" -tempDownloadDirectory $tempDownloadDirectory -storageAccountName $storageAccountName -storageAccountKey $storageAccountKey -storageShareName $storageShareName    
