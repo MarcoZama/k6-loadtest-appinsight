@@ -132,6 +132,7 @@ Write-Host "Creating agents container(s)"
 
 $injectorsEnd = Get-Date
 
+
 ### WAIT FOR EXECUTION TO FINISH
 do {
     $countRunning = 0;
