@@ -6,7 +6,7 @@ export const options = {
     { duration: '20s', target: 15 }
   ],
   thresholds: {
-    http_req_duration: ['p(95)<250'],
+    http_req_duration: ['p(95)<600'],
   },
 };
 
