@@ -24,7 +24,7 @@ param (
     [Parameter(Mandatory = $true)][string]$logWorkspaceKey, #La Primary Key della Log Analytics Workspace 
     [Parameter(Mandatory = $false)][string]$logTableName = "loadtestresult", #Il nome della tabella di Custom Logs dove verranno portati i dati per cui è stata fatta ingestion
     [Parameter(Mandatory = $false)][string]$logFullTableName = "loadtestresultfull", #Il nome della tabella di Custom Logs dove verranno portati i dati FULL per cui è stata fatta ingestion
-    [Parameter(Mandatory = $false)][switch]$uploadFullLogs, #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
+    [Parameter(Mandatory = $false)][switch]$uploadFullLogs="true", #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
     [Parameter(Mandatory = $false)][int]$splitblock = 10000 #Il numero di righe da inviare se i full logs sono superiori a 30MB
 )
 
