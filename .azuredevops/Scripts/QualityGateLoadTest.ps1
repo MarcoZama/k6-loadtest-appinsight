@@ -16,7 +16,7 @@ az login --service-principal --username $ClientId --password $ClientSecret --ten
 az account set --subscription $SubscriptionGuid
 
 $queryString = "$($logTableName)_CL | where metrics_http_req_duration_p_95__d > 600 | count"
-$queryResult = az monitor log-analytics query -w $logWorkspaceID --analytics-query $queryString -t P3DT12H | ConvertFrom-Json
+$queryResult = az monitor log-analytics query -w $logWorkspaceID --analytics-query $queryString  | ConvertFrom-Json
 
 if($($queryResult).Count -eq 0) {
     Write-Host "Succeed"
