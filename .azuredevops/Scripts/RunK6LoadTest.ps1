@@ -11,7 +11,7 @@ param (
     [Parameter(Mandatory = $false)][string]$storageShareName = "loadtestk6share", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
     ### Load test resources
     [Parameter(Mandatory = $false)][string]$loadTestIdentifier = $(Get-Date -format "yyyyMMddhhmmss"), #Identificativo univoco per ogni run, usato anche come nome di cartella all'interno della Share dello storage account
-    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTests\loadtest.js", #Il percorso file di test di carico in K6
+    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTestsK6\loadtest.js", #Il percorso file di test di carico in K6
     [Parameter(Mandatory = $false)][string]$loadTestVUS = 30, #Il numero di Virtual Users concorrenti per ogni container
     [Parameter(Mandatory = $false)][string]$loadTestDuration = "20s", #La durata del test in secondi
     ### Containers info
