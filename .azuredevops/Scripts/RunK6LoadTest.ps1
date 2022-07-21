@@ -5,13 +5,13 @@ param (
     [Parameter(Mandatory = $true)][string]$ClientId,
     [Parameter(Mandatory = $true)][string]$ClientSecret,
     ### Azure resources
-    [Parameter(Mandatory = $false)][string]$loadTestResourceGroup = "RG-LoadTestK6", #Il nome del resource group dove creare le risorse Azure 
+    [Parameter(Mandatory = $false)][string]$loadTestResourceGroup = "RG-LoadTestk6", #Il nome del resource group dove creare le risorse Azure 
     [Parameter(Mandatory = $false)][string]$loadTestLocation = "westeurope", #Location per le risorse Azure
     [Parameter(Mandatory = $true)][string]$storageAccountName, #Il nome dello storage account che conterrà i file delle esecuzioni dei test ed i risultati
-    [Parameter(Mandatory = $false)][string]$storageShareName = "saloadtestk6share", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
+    [Parameter(Mandatory = $false)][string]$storageShareName = "loadtestrun", #Il nome della file share all'interno dello storage account che effettivamente conterrà i file
     ### Load test resources
     [Parameter(Mandatory = $false)][string]$loadTestIdentifier = $(Get-Date -format "yyyyMMddhhmmss"), #Identificativo univoco per ogni run, usato anche come nome di cartella all'interno della Share dello storage account
-    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTestsK6\loadtest.js", #Il percorso file di test di carico in K6
+    [Parameter(Mandatory = $false)][string]$loadTestK6Script = "$($env:Build_Repository_LocalPath)\src\LoadTests\loadtest.js", #Il percorso file di test di carico in K6
     [Parameter(Mandatory = $false)][string]$loadTestVUS = 30, #Il numero di Virtual Users concorrenti per ogni container
     [Parameter(Mandatory = $false)][string]$loadTestDuration = "20s", #La durata del test in secondi
     ### Containers info
@@ -19,10 +19,13 @@ param (
     [Parameter(Mandatory = $false)][int]$K6AgentInstances = 1, #Il numero di container da avviare
     [Parameter(Mandatory = $false)][int]$K6AgentCPU = 4, #Il numero di core CPU per ogni Container
     [Parameter(Mandatory = $false)][int]$K6AgentMemory = 4, #La quantità di RAM in Gb per ogni Container
-
-    [Parameter(Mandatory = $false)][string]$appInsightApiKey = "Lav4hb3v8psjcllogcgofq8qwedyschmuvj1fagn" 
-
-
+    ### Log Analytics Workspace Ingestion
+    [Parameter(Mandatory = $true)][string]$logWorkspaceID, #La Workspace ID della Log Analytics Workspace da utilizzare per l'ingestion dei risultati
+    [Parameter(Mandatory = $true)][string]$logWorkspaceKey, #La Primary Key della Log Analytics Workspace 
+    [Parameter(Mandatory = $false)][string]$logTableName = "loadtestresult", #Il nome della tabella di Custom Logs dove verranno portati i dati per cui è stata fatta ingestion
+    [Parameter(Mandatory = $false)][string]$logFullTableName = "loadtestresultfull", #Il nome della tabella di Custom Logs dove verranno portati i dati FULL per cui è stata fatta ingestion
+    [Parameter(Mandatory = $false)][switch]$uploadFullLogs, #Se selezionato lo switch, vengono salvati su Log Analytics anche i dati FULL
+    [Parameter(Mandatory = $false)][int]$splitblock = 10000 #Il numero di righe da inviare se i full logs sono superiori a 30MB
 )
 
 ### FUNCTIONS
@@ -43,9 +46,6 @@ Function Build-Signature ($customerId, $sharedKey, $date, $contentLength, $metho
     $authorization = 'SharedKey {0}:{1}' -f $customerId, $encodedHash
     return $authorization
 }
-
-
-
 
 # Create the function to create and post the request
 Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType) {
@@ -125,13 +125,12 @@ Write-Host "Creating agents container(s)"
     Write-Host "Creating K6 agent $_"
     az container create --resource-group $using:loadTestResourceGroup --name "$using:AciK6AgentNamePrefix-$_" --location $using:loadTestLocation `
         --image $using:K6AgentImage --restart-policy Never --cpu $using:K6AgentCPU --memory $using:K6AgentMemory `
-        --environment-variables AGENT_NUM=$_ LOAD_TEST_ID=$using:loadTestIdentifier TEST_VUS=$using:loadTestVUS TEST_DURATION=$using:loadTestDuration MY_HOSTNAME="https://k6-loadtest-appinsight.azurewebsites.net" `
+        --environment-variables AGENT_NUM=$_ LOAD_TEST_ID=$using:loadTestIdentifier TEST_VUS=$using:loadTestVUS TEST_DURATION=$using:loadTestDuration MY_HOSTNAME="https://devops-k6-loadtest.azurewebsites.net" `
         --azure-file-volume-account-name $using:storageAccountName --azure-file-volume-account-key $using:storageAccountKey --azure-file-volume-share-name $using:storageShareName --azure-file-volume-mount-path "/$using:AciK6AgentLoadTestHome/" `
-        --command-line "k6 run /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/script.js --summary-export /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_${_}_summary.json -jq '. | select(.type=="Point")'  --out json=/$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_$_.json" 
+        --command-line "k6 run /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/script.js --summary-export /$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_${_}_summary.json --out json=/$using:AciK6AgentLoadTestHome/$using:loadTestIdentifier/${using:loadTestIdentifier}_$_.json" 
 } -ThrottleLimit 10
 
 $injectorsEnd = Get-Date
-
 
 ### WAIT FOR EXECUTION TO FINISH
 do {
@@ -166,8 +165,7 @@ New-Item -ItemType "directory" -Path $tempDownloadDirectory
     $finalJson = ConvertTo-Json @($jsonSummary) -Depth 99 
 
     Post-LogAnalyticsData -customerId $logWorkspaceID -sharedKey $logWorkspaceKey -body ([System.Text.Encoding]::UTF8.GetBytes($finalJson)) -logType $logTableName 
-    
-    
+
     if ($uploadFullLogs) {
         $jsonFull = Download-JSON-From-StorageAccount -loadTestIdentifier $loadTestIdentifier -fileName "${loadTestIdentifier}_${_}.json" -tempDownloadDirectory $tempDownloadDirectory -storageAccountName $storageAccountName -storageAccountKey $storageAccountKey -storageShareName $storageShareName    
         $fileSizeMB = (Get-Item "$tempDownloadDirectory/${loadTestIdentifier}_${_}.json").length / 1MB
